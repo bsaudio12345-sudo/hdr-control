@@ -1,0 +1,48 @@
+name: Build macOS App
+
+# Workflow ini akan berjalan otomatis setiap ada perubahan di branch main
+# atau bisa dijalankan manual (workflow_dispatch)
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch: 
+
+jobs:
+  build_macos:
+    runs-on: macos-latest # Menggunakan server virtual macOS dari GitHub
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Menggunakan Python 3.10 yang stabil
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pillow requests pyinstaller
+
+    - name: Build with PyInstaller
+      run: |
+        pyinstaller --name "BMD HyperDeck Control" \
+                    --windowed \
+                    --icon="logo.icns" \
+                    --add-data "logo.icns:." \
+                    --add-data "logo.ico:." \
+                    main.py
+
+    # Aplikasi macOS (.app) adalah sebuah folder. 
+    # Kita harus men-zip-nya agar permission file tidak rusak saat diunduh.
+    - name: Zip the .app Bundle
+      run: |
+        cd dist
+        zip -r "BMD_HyperDeck_Control_macOS.zip" "BMD HyperDeck Control.app"
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BMD-HyperDeck-Control-macOS
+        path: dist/BMD_HyperDeck_Control_macOS.zip
