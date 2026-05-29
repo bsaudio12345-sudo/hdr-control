@@ -1,7 +1,5 @@
-name: Build macOS App
+name: Build macOS App (Monterey Compatible)
 
-# Workflow ini akan berjalan otomatis setiap ada perubahan di branch main
-# atau bisa dijalankan manual (workflow_dispatch)
 on:
   push:
     branches: [ "main" ]
@@ -9,7 +7,8 @@ on:
 
 jobs:
   build_macos:
-    runs-on: macos-latest # Menggunakan server virtual macOS dari GitHub
+    # Menggunakan macOS 13 (Intel runner) agar aplikasi bisa berjalan lintas generasi Mac
+    runs-on: macos-13 
 
     steps:
     - name: Checkout Repository
@@ -18,7 +17,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10' # Menggunakan Python 3.10 yang stabil
+        python-version: '3.10'
 
     - name: Install Dependencies
       run: |
@@ -26,23 +25,25 @@ jobs:
         pip install pillow requests pyinstaller
 
     - name: Build with PyInstaller
+      env:
+        # Memaksa target minimum sistem operasi ke macOS Monterey (12.0)
+        MACOSX_DEPLOYMENT_TARGET: "12.0"
       run: |
-        pyinstaller --name "BMD HyperDeck Control" \
+        cd "Hyperdeck & Framesync Control"
+        python -m PyInstaller --name "BMD HyperDeck Control" \
                     --windowed \
                     --icon="logo.icns" \
                     --add-data "logo.icns:." \
                     --add-data "logo.ico:." \
                     main.py
 
-    # Aplikasi macOS (.app) adalah sebuah folder. 
-    # Kita harus men-zip-nya agar permission file tidak rusak saat diunduh.
     - name: Zip the .app Bundle
       run: |
-        cd dist
+        cd "Hyperdeck & Framesync Control/dist"
         zip -r "BMD_HyperDeck_Control_macOS.zip" "BMD HyperDeck Control.app"
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: BMD-HyperDeck-Control-macOS
-        path: dist/BMD_HyperDeck_Control_macOS.zip
+        path: Hyperdeck & Framesync Control/dist/BMD_HyperDeck_Control_macOS.zip
